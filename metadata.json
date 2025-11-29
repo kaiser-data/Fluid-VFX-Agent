@@ -1,0 +1,5 @@
+{
+  "name": "FluidVFX Agent",
+  "description": "Upload a selfie and generate a 10-second cinematic video featuring yourself in chaotic fluid scenes using Gemini and Veo models.",
+  "requestFramePermissions": []
+}
