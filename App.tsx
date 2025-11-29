@@ -70,11 +70,23 @@ const App: React.FC = () => {
     try {
       const base64 = await geminiService.fileToBase64(selectedFile);
       const composite = await geminiService.generateCompositeImage(base64, selectedScene);
-      
+
       setCompositeBase64(composite);
       setStep('confirm-composite');
     } catch (err: any) {
-      setError(err.message || "Failed to generate composite image.");
+      console.error("Composite generation error:", err);
+
+      // Check for quota errors
+      if (err.message?.includes('quota') || err.message?.includes('429')) {
+        const retryMatch = err.message.match(/retry in (\d+)/i);
+        const retrySeconds = retryMatch ? retryMatch[1] : '60';
+        setError(`API quota exceeded. Please wait ${retrySeconds} seconds and try again, or upgrade to a paid plan.`);
+      } else if (err.message?.includes('RESOURCE_EXHAUSTED')) {
+        setError("API quota limit reached. Please wait a minute and try again, or upgrade your plan at https://ai.google.dev/pricing");
+      } else {
+        setError(err.message || "Failed to generate composite image.");
+      }
+
       setStep('scene-selection');
     } finally {
       setIsProcessing(false);
@@ -96,15 +108,27 @@ const App: React.FC = () => {
       }
 
       const url = await geminiService.generateVeoVideo(
-        compositeBase64, 
+        compositeBase64,
         selectedScene,
         (msg) => setStatusMessage(msg)
       );
-      
+
       setVideoUrl(url);
       setStep('complete');
     } catch (err: any) {
-      setError(err.message || "Failed to generate video.");
+      console.error("Video generation error:", err);
+
+      // Check for quota errors
+      if (err.message?.includes('quota') || err.message?.includes('429')) {
+        const retryMatch = err.message.match(/retry in (\d+)/i);
+        const retrySeconds = retryMatch ? retryMatch[1] : '60';
+        setError(`API quota exceeded. Please wait ${retrySeconds} seconds and try again, or upgrade to a paid plan.`);
+      } else if (err.message?.includes('RESOURCE_EXHAUSTED')) {
+        setError("API quota limit reached. Please wait a minute and try again, or upgrade your plan at https://ai.google.dev/pricing");
+      } else {
+        setError(err.message || "Failed to generate video.");
+      }
+
       // Stay on confirm screen so they can retry
       setStep('confirm-composite');
     } finally {
@@ -176,9 +200,39 @@ const App: React.FC = () => {
           {error && (
             <div className="bg-red-900/30 border border-red-500/50 text-red-200 p-4 rounded-lg mb-6 flex items-start">
               <AlertCircle className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
-              <div>
+              <div className="flex-1">
                 <h4 className="font-bold">Error</h4>
                 <p className="text-sm">{error}</p>
+                {error.includes("quota") && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs text-red-300">
+                      The free tier has strict rate limits. You can:
+                    </p>
+                    <ul className="text-xs text-red-300 list-disc list-inside space-y-1">
+                      <li>Wait and retry in about a minute</li>
+                      <li>
+                        <a
+                          href="https://ai.google.dev/pricing"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-red-200"
+                        >
+                          Upgrade to a paid plan
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-red-200"
+                        >
+                          Check your usage
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                )}
                 {error.includes("Requested entity was not found") && (
                    <Button size="sm" variant="danger" className="mt-2" onClick={handleSelectKey}>
                      Reselect API Key

@@ -5,18 +5,21 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   icon?: React.ReactNode;
+  as?: 'button' | 'span';
 }
 
-const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  size = 'md', 
-  isLoading, 
+const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  isLoading,
   icon,
   className = '',
   disabled,
-  ...props 
+  as = 'button',
+  ...props
 }) => {
+  const Component = as;
   const baseStyles = "inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900";
   
   const variants = {
@@ -33,15 +36,15 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   return (
-    <button 
+    <Component
       className={`
-        ${baseStyles} 
-        ${variants[variant]} 
-        ${sizes[size]} 
+        ${baseStyles}
+        ${variants[variant]}
+        ${sizes[size]}
         ${(disabled || isLoading) ? 'opacity-50 cursor-not-allowed' : 'transform hover:scale-[1.02]'}
         ${className}
       `}
-      disabled={disabled || isLoading}
+      {...(as === 'button' ? { disabled: disabled || isLoading } : {})}
       {...props}
     >
       {isLoading ? (
@@ -53,7 +56,7 @@ const Button: React.FC<ButtonProps> = ({
         <span className="mr-2">{icon}</span>
       ) : null}
       {children}
-    </button>
+    </Component>
   );
 };
 
